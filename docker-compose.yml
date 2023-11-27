@@ -1,0 +1,54 @@
+version: "3.7"
+
+services:
+  api-books:
+    restart: on-failure
+    build: ./Books
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db-books
+    links:
+      - db-books
+  
+  db-books:
+    image: postgres
+    
+    environment:
+       POSTGTES_PASSWORD: 12345
+       POSTGRES_DB: library
+       POSTGRES_USER: postgres_user
+       POSTGRES_HOST_AUTH_METHOD: trust
+
+  api-users:
+    restart: on-failure
+    build: ./Users
+    ports:
+      - "9898:9898"
+    volumes:
+      - .:/app
+
+  api-loans:
+    restart: on-failure
+    build: ./Loans
+    ports:
+      - "7778:7778"
+    volumes:
+      - .:/app
+    depends_on:
+      - db-loans
+    links:
+      - api-books:books
+      - api-users:users
+      - db-loans
+  
+  db-loans:
+    restart: on-failure
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_USER: postgres_user
+      POSTGRES_DB: library-loans
+      POSTGRES_HOST_AUTH_METHOD: trust
