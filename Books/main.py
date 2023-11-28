@@ -14,19 +14,22 @@ app = Flask(__name__)
 
 cur = conn.cursor()
 
+
 @app.route('/', methods =['GET'])
 def index():
     cur.execute('SELECT * FROM book')
     data = cur.fetchall()
     return jsonify(data)
 
-@app.route('/get/<id>', methods =['GET'])
-def index(id):
-    cur.execute('SELECT * FROM book WHERE ID = %s', id)
-    data = cur.fetchall()
-    return jsonify(data)
+@app.route('/get/<int:id>', methods=['GET'])
+def get_book(id):
+    cur.execute('SELECT * FROM book WHERE ID = %s', (id,))
+    data = cur.fetchone()
 
-
+    if data:
+        return jsonify(data)
+    else:
+        return jsonify({"message": f"No book found with ID {id}"}), 404
 
 @app.route('/check_availability/<book_id>', methods=['GET'])
 def check_availability(book_id):
