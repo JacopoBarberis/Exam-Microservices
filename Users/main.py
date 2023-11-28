@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 from bson import json_util
 from pymongo.server_api import ServerApi
+import pika
 
 load_dotenv()
 app = Flask(__name__)
@@ -54,6 +55,16 @@ def create_user():
     DataNascita = user['DataNascita']
 
     collections.insert_one(user)
+    connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+    channel = connection.channel()
+
+    channel.queue_declare(queue='hello')
+
+    channel.basic_publish(exchange='',
+        routing_key='hello',
+        body=f'Benvenuto {Nome}!!')
+    connection.close()
+
     return jsonify({"message": f"User {Nome} {Cognome} created successfully"}), 201
 
 @app.route('/delete/<username>', methods =['DELETE'])

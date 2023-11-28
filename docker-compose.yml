@@ -1,6 +1,19 @@
 version: "3.7"
 
 services:
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    ports:
+        - 5672:5672
+        - 15672:15672
+    volumes:
+        - ./rabbitmq-data/:/var/lib/rabbitmq/
+        - ./rabbitmq-logs/:/var/log/rabbitmq
+    networks:
+        - rabbitmq_go_net
+
   api-books:
     restart: on-failure
     build: ./Books
@@ -47,7 +60,7 @@ services:
     depends_on:
       - db-loans
     networks:
-      - loans_netowork
+      - loans_network
       - rabbitmq_go_net
   
   db-loans:
@@ -59,29 +72,17 @@ services:
       POSTGRES_DB: library-loans
       POSTGRES_HOST_AUTH_METHOD: trust
     networks:
-      - Loans_netowork
+      - loans_network
 
   api-notifications:
     restart: on-failure
     build: ./Notifications
     volumes:
       - .:/app
-    depends on:
+    depends_on:
       - rabbitmq
     networks:
       - rabbitmq_go_net
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: 'rabbitmq'
-    ports:
-        - 5672:5672
-        - 15672:15672
-    volumes:
-        - ./rabbitmq-data/:/var/lib/rabbitmq/
-        - ./rabbitmq-logs/:/var/log/rabbitmq
-    networks:
-        - rabbitmq_go_net
 
 networks:
   rabbitmq_go_net:

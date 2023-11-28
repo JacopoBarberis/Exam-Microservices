@@ -1,6 +1,7 @@
     
 from flask import Flask, jsonify, request
 import psycopg2
+import pika
 
 conn = psycopg2.connect(
     database = "library",
@@ -27,6 +28,16 @@ def get_book(id):
     data = cur.fetchone()
 
     if data:
+
+        connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+        channel = connection.channel()
+
+        channel.queue_declare(queue='hello')
+
+        channel.basic_publish(exchange='',
+                            routing_key='hello',
+                            body='Aggiunto libro con successo!!')
+        connection.close()
         return jsonify(data)
     else:
         return jsonify({"message": f"No book found with ID {id}"}), 404
