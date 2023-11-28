@@ -9,7 +9,7 @@ def main():
 
     def callback(ch, method, properties, body):
         with open('notifications.txt', 'a') as f:
-            f.write(f'{body}')
+            f.write(f'{body}\n')
 
     channel.basic_consume(queue='hello',
                         auto_ack=True,
