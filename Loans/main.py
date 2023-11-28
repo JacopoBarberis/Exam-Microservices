@@ -32,10 +32,13 @@ def get_loan(id):
 @app.route('/create', methods=['POST'])
 def create_loan():
     data = request.get_json()
+    required_fields = ['book_id','username']
+    for field in required_fields:
+        if field not in data:
+            return 'Devi compilare tutti i campi', 400
     book_id = data['book_id']
     user_id = data['username']
 
-    book = requests
     book = requests.get(f'http://api-books:5000//check_availability/{book_id}')
     if book.status_code == 404:
         return 'Libro non trovato', 404

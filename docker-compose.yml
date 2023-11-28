@@ -10,8 +10,10 @@ services:
       - .:/app
     depends_on:
       - db-books
-    links:
-      - db-books
+    networks:
+      - books_network
+      - rabbitmq_go_net
+
   
   db-books:
     image: postgres
@@ -22,13 +24,18 @@ services:
        POSTGRES_USER: postgres_user
        POSTGRES_HOST_AUTH_METHOD: trust
 
+    networks:
+      - books_network
+
   api-users:
     restart: on-failure
     build: ./Users
     ports:
       - "9898:9898"
     volumes:
-      - .:/app
+      - .:/app  
+    networks:
+      - rabbitmq_go_net
 
   api-loans:
     restart: on-failure
@@ -39,10 +46,9 @@ services:
       - .:/app
     depends_on:
       - db-loans
-    links:
-      - api-books:books
-      - api-users:users
-      - db-loans
+    networks:
+      - loans_netowork
+      - rabbitmq_go_net
   
   db-loans:
     restart: on-failure
@@ -52,3 +58,36 @@ services:
       POSTGRES_USER: postgres_user
       POSTGRES_DB: library-loans
       POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - Loans_netowork
+
+  api-notifications:
+    restart: on-failure
+    build: ./Notifications
+    volumes:
+      - .:/app
+    depends on:
+      - rabbitmq
+    networks:
+      - rabbitmq_go_net
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    ports:
+        - 5672:5672
+        - 15672:15672
+    volumes:
+        - ./rabbitmq-data/:/var/lib/rabbitmq/
+        - ./rabbitmq-logs/:/var/log/rabbitmq
+    networks:
+        - rabbitmq_go_net
+
+networks:
+  rabbitmq_go_net:
+    driver: bridge
+  books_network:
+    driver: bridge
+  loans_network:
+    driver: bridge
+  
