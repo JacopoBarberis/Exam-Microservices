@@ -15,14 +15,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build 
-      run: docker-compose up --remove-orphans
+      run: docker-compose up -d --remove-orphans
   test:
     runs-on: ubuntu-latest
  
     steps:
     - uses: actions/checkout@v2
     - name: Build 
-      run: docker-compose up --remove-orphans
+      run: docker-compose up -d --remove-orphans
 #    - name: Test 
 #      run: |
 #          python3 Books/test.py
