@@ -2,6 +2,7 @@
 from flask import Flask, jsonify, request
 import psycopg2
 import pika
+from Notifications.main import send
 
 conn = psycopg2.connect(
     database = "library",
@@ -38,6 +39,9 @@ def get_book(id):
                             routing_key='hello',
                             body='Aggiunto libro con successo!!')
         connection.close()
+        destinatario = 'indirizzo_email_destinatario@example.com'  # Sostituisci con l'effettivo indirizzo email
+        messaggio = 'Testo del messaggio da inviare'
+        send(destinatario, messaggio)
         return jsonify(data), 200
     else:
         return jsonify({"message": f"No book found with ID {id}"}), 404

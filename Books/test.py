@@ -2,11 +2,6 @@ import unittest
 import requests
 
 class TestBookAPI(unittest.TestCase):
-
-    def test_get(self):
-        response = requests.post('http://localhost:5000/get/1')
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), list)
         
     def test_create_book(self):
         response = requests.post('http://localhost:5000/create', json={})

@@ -76,6 +76,15 @@ def delete_user(username):
     if user is None:
         return jsonify({"message": f"User with User {username} not found"}), 404
     collections.delete_one({'Username': username})
+    connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+    channel = connection.channel()
+
+    channel.queue_declare(queue='hello')
+
+    channel.basic_publish(exchange='',
+        routing_key='hello',
+        body=f'Utente {username} eliminato con successo!!')
+    connection.close()
     return jsonify({"message": f"User with User {username} deleted successfully"}), 200
 
 @app.route('/update/<username>', methods =['PUT'])
