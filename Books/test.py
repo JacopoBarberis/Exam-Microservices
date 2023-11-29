@@ -3,6 +3,11 @@ import requests
 
 class TestBookAPI(unittest.TestCase):
 
+    def test_get(self):
+        response = requests.post('http://localhost:5000/get/1', json={})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), list)
+        
     def test_create_book(self):
         response = requests.post('http://localhost:5000/create', json={})
         self.assertEqual(response.status_code, 400)
@@ -24,10 +29,14 @@ class TestBookAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["Errore"], "Il campo 'Anno' è obbligatorio e non può essere vuoto.")
 
+        response = requests.post('http://localhost:5000/create', json={'ISBN': '123', 'Titolo': 'Book Title', 'Autore': 'Author', 'Genere': 'Genre', 'Anno': 2022})
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["Messaggio"], "Dati inseriti correttamente")
+
     def test_delete_book(self):
-        response = requests.delete('http://localhost:5000/delete/123')
+        response = requests.delete('http://localhost:5000/delete/9999999999')
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json()['messagge'], 'Book with ID 123 not found')
+        self.assertEqual(response.json()['messagge'], 'Book with ID 9999999999 not found')
 
         response = requests.delete('http://localhost:5000/delete/1')
         self.assertEqual(response.status_code, 200)
@@ -47,7 +56,7 @@ class TestBookAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["Errore"], "Il campo 'book_id' è obbligatorio e non può essere vuoto.")
 
-        response = requests.post('http://localhost:5000/create_item', json={'book_id': 1})
+        response = requests.post('http://localhost:5000/create_item', json={'book_id': -1})
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["Errore"], "ID del libro '1' non trovato nella tabella book.")
 
@@ -56,9 +65,9 @@ class TestBookAPI(unittest.TestCase):
         self.assertEqual(response.json()["Messaggio"], "Dati inseriti correttamente")
 
     def test_delete_item(self):
-        response = requests.delete('http://localhost:5000/delete-item/123')
+        response = requests.delete('http://localhost:5000/delete-item/9999999999')
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json()['messagge'], 'Item with ID 123 not found')
+        self.assertEqual(response.json()['messagge'], 'Item with ID 9999999999 not found')
 
         response = requests.delete('http://localhost:5000/delete-item/1')
         self.assertEqual(response.status_code, 200)
