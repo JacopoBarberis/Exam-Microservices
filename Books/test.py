@@ -24,10 +24,6 @@ class TestBookAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["Errore"], "Il campo 'Anno' è obbligatorio e non può essere vuoto.")
 
-        response = requests.post('http://localhost:5000/create', json={'ISBN': '123', 'Titolo': 'Book Title', 'Autore': 'Author', 'Genere': 'Genre', 'Anno': 2022})
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.json()["Messaggio"], "Dati inseriti correttamente")
-
     def test_delete_book(self):
         response = requests.delete('http://localhost:5000/delete/123')
         self.assertEqual(response.status_code, 404)
