@@ -26,6 +26,7 @@ jobs:
       run: docker-compose up -d --remove-orphans
     - name: Test 
       run: |
+        sleep 20
         python3 Books/test.py
         python3 Users/test.py
         python3 Loans/test.py
