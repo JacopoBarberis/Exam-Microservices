@@ -9,8 +9,18 @@ mail_config = {
     "MAIL_PORT": os.getenv("SMTP_PORT"),
     "MAIL_USERNAME": os.getenv("SMTP_USERNAME"),
     "MAIL_PASSWORD": os.getenv("SMTP_PASSWORD"),
-    "MAIL SENDER": "jacopo@mailtrap.com"
+    "MAIL_SENDER": "jacopo@mailtrap.com"
 }
+
+def send(destinatario, messaggio):
+    mail = flask_mail.Mail(mailtrap, mail_config)
+    msg = flask_mail.Message(
+        messaggio,
+        sender=mail_config["MAIL_SENDER"],
+        recipients=[destinatario]
+    )
+    msg.body = "Email inviata con successo!"
+    mail.send(msg)
 
 def main():
 
