@@ -22,12 +22,20 @@ def index():
         data = cur.fetchall()
     return jsonify(data)
 
+from flask import abort
+
 @app.route('/loan/<id>', methods=['GET'])   
 def get_loan(id):
     with conn.cursor() as cur:
         cur.execute('SELECT * FROM loan WHERE id = %s', id)
         data = cur.fetchall()
+        
+        if not data:
+            # Se non ci sono dati, restituisci un errore 404 Not Found
+            return f"Prestito non trovato", 404
+    
     return jsonify(data)
+
 
 @app.route('/create', methods=['POST'])
 def create_loan():
@@ -65,6 +73,30 @@ def return_book(loan_id):
     conn.commit()
 
     return jsonify({"Message": "Riconsegna effettuata correttamente"})
+
+@app.route('/delete/<id>', methods=['DELETE'])
+def delete_loan(id):
+
+    with conn.cursor() as cur:
+        # Verifica se il prestito esiste
+        cur.execute('SELECT * FROM loan WHERE id = %s', id)
+        existing_loan = cur.fetchone()
+
+        if existing_loan is None:
+            return 'Prestito non trovato', 404
+
+        # Effettua la cancellazione del prestito
+        cur.execute('DELETE FROM loan WHERE id = %s', id)
+
+        # Aggiorna lo stato di disponibilità del libro
+        cur.execute('SELECT book_id FROM loan WHERE id = %s', id)
+        book_id = cur.fetchone()
+
+        requests.put(f'http://api-books:5000/set_availability/{book_id}')
+
+        conn.commit()
+
+    return jsonify({"Message": "Prestito cancellato correttamente"})
 
 
 if __name__ == '__main__':

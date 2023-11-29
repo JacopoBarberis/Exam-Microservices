@@ -1,4 +1,16 @@
 import pika, sys, os
+import time, flask_mail, mailtrap
+from dotenv import load_dotenv
+
+load_dotenv()
+
+mail_config = {
+    "MAIL_SERVER": os.getenv("SMTP_HOST"),
+    "MAIL_PORT": os.getenv("SMTP_PORT"),
+    "MAIL_USERNAME": os.getenv("SMTP_USERNAME"),
+    "MAIL_PASSWORD": os.getenv("SMTP_PASSWORD"),
+    "MAIL SENDER": "jacopo@mailtrap.com"
+}
 
 def main():
 
@@ -10,6 +22,7 @@ def main():
     def callback(ch, method, properties, body):
         with open('notifications.txt', 'a') as f:
             f.write(f'{body}\n')
+        mail = flask_mail.Mail(mailtrap, mail_config)
 
     channel.basic_consume(queue='hello',
                         auto_ack=True,

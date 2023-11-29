@@ -1,1 +1,5 @@
 pika
+flask_mail
+requests
+mailtrap
+python-dotenv
