@@ -16,6 +16,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build 
       run: docker-compose up -d --remove-orphans
+
   test:
     runs-on: ubuntu-latest
  
@@ -23,9 +24,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build 
       run: docker-compose up -d --remove-orphans
-#    - name: Test 
-#      run: |
-#          python3 Books/test.py
-#          python3 Users/test.py
- #         python3 Loans/test.py
-    
+    - name: Test 
+      run: |
+        sleep 120
+        python3 Books/test.py
+        python3 Users/test.py
+        python3 Loans/test.py
