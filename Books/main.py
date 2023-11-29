@@ -38,7 +38,7 @@ def get_book(id):
                             routing_key='hello',
                             body='Aggiunto libro con successo!!')
         connection.close()
-        return jsonify(data)
+        return jsonify(data), 200
     else:
         return jsonify({"message": f"No book found with ID {id}"}), 404
 
