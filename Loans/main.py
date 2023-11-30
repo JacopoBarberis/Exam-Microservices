@@ -2,6 +2,14 @@ from flask import Flask, jsonify, request
 import psycopg2
 import requests
 from datetime import datetime
+import logging
+import sys
+import time
+
+log_file_path = 'app.log'
+
+logging.basicConfig(filename=log_file_path, level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -13,7 +21,14 @@ conn = psycopg2.connect(
     port=5432
 )
 
+app.logger.addHandler(logging.StreamHandler(sys.stdout))
+app.logger.setLevel(logging.DEBUG)
 cur = conn.cursor()
+
+def log_execution_time(start_time, operation_name):
+    end_time = time.time()
+    execution_time = end_time - start_time
+    logger.info(f'{operation_name} executed. Execution time: {execution_time:.4f} seconds')
 
 @app.route('/', methods=['GET'])
 def index():
@@ -39,6 +54,7 @@ def get_loan(id):
 
 @app.route('/create', methods=['POST'])
 def create_loan():
+    start_time = time.time()
     data = request.get_json()
     required_fields = ['book_id','username']
     for field in required_fields:
@@ -58,10 +74,12 @@ def create_loan():
     requests.put(f'http://api-books:5000/set_availability/{book_id}')
     #cur.execute(f'UPDATE item SET isDisponibile = False WHERE id = {book_id} ')
     conn.commit()
+    log_execution_time(start_time, 'create_loan')
     return jsonify({"Messagge":"Dati inseriti correttamente"}, 201)
 
 @app.route('/return/<loan_id>', methods=['PUT'])
 def return_book(loan_id):
+    start_time = time.time()
     cur.execute('SELECT * FROM loan WHERE id = %s', loan_id)
     loan = cur.fetchone()
     cur.execute('SELECT book_id FROM loan WHERE id = %s', loan_id)
@@ -71,7 +89,7 @@ def return_book(loan_id):
     cur.execute('UPDATE loan SET data_restituzione = %s where id = %s', (datetime.now(),loan_id))
     requests.put(f'http://api-books:5000/set_availability/{book_id}')
     conn.commit()
-
+    log_execution_time(start_time, 'update_loan')
     return jsonify({"Message": "Riconsegna effettuata correttamente"})
 
 @app.route('/delete/<id>', methods=['DELETE'])

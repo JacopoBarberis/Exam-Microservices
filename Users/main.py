@@ -5,9 +5,26 @@ import os
 from bson import json_util
 from pymongo.server_api import ServerApi
 import pika
+import logging 
+import sys
+import time
+
+log_file_path = 'app.log'
+
+logging.basicConfig(filename=log_file_path, level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 app = Flask(__name__)
+app.logger.addHandler(logging.StreamHandler(sys.stdout))
+app.logger.setLevel(logging.DEBUG)
+
+
+def log_execution_time(start_time, operation_name):
+    end_time = time.time()
+    execution_time = end_time - start_time
+    logger.info(f'{operation_name} executed. Execution time: {execution_time:.4f} seconds')
+
 
 uri = f"mongodb+srv://{os.getenv('MONGO_USER')}:{os.getenv('MONGO_PASSWORD')}@{os.getenv('MONGO_URL')}/?retryWrites=true&w=majority"
 
@@ -34,6 +51,7 @@ def get_user(username):
 
 @app.route('/register', methods =['POST'])
 def create_user():
+    start_time = time.time()
     collections = client.Library.users
     if not request.is_json:
         return jsonify({"message": "Please provide a valid JSON"}), 400
@@ -64,7 +82,7 @@ def create_user():
         routing_key='hello',
         body=f'Benvenuto {Nome}!!')
     connection.close()
-
+    log_execution_time(start_time, 'create_user')
     return jsonify({"message": f"User {Nome} {Cognome} created successfully"}), 201
 
 @app.route('/delete/<username>', methods =['DELETE'])
@@ -89,6 +107,7 @@ def delete_user(username):
 
 @app.route('/update/<username>', methods =['PUT'])
 def update_user(username):
+    start_time = time.time()
     collections = client.Library.users
     if not request.is_json:
         return jsonify({"message": "Please provide a valid JSON"}), 400
@@ -106,6 +125,7 @@ def update_user(username):
     Password = user['Password']
     DataNascita = user['DataNascita']
     collections.update_one({'Username': username}, {'$set': user})
+    log_execution_time(start_time,'update_user')
     return jsonify({"message": f"User {Nome} {Cognome} updated successfully"}), 200
 app.run(host = '0.0.0.0', port = 9898, debug = True)
 

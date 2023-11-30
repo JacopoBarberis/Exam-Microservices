@@ -1,96 +1,108 @@
-    
 from flask import Flask, jsonify, request
 import psycopg2
 import pika
-from Notifications.main import send
+import logging
+import time
+import sys
+
+log_file_path = 'app.log'
+
+logging.basicConfig(filename=log_file_path, level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 conn = psycopg2.connect(
-    database = "library",
-    host = "db-books",
-    user = "postgres_user",
-    password = "12345",
-    port = 5432
+    database="library",
+    host="db-books",
+    user="postgres_user",
+    password="12345",
+    port=5432
 )
 
 app = Flask(__name__)
-
+app.logger.addHandler(logging.StreamHandler(sys.stdout))
+app.logger.setLevel(logging.DEBUG)
 cur = conn.cursor()
 
 
-@app.route('/', methods =['GET'])
+def log_execution_time(start_time, operation_name):
+    end_time = time.time()
+    execution_time = end_time - start_time
+    logger.info(f'{operation_name} executed. Execution time: {execution_time:.4f} seconds')
+
+
+@app.route('/', methods=['GET'])
 def index():
+    start_time = time.time()
     cur.execute('SELECT * FROM book')
     data = cur.fetchall()
+    log_execution_time(start_time, 'index')
     return jsonify(data)
 
-@app.route('/get/<int:id>', methods=['GET'])
+
+@app.route('/get/<id>', methods=['GET'])
 def get_book(id):
+    start_time = time.time()
     cur.execute('SELECT * FROM book WHERE ID = %s', (id,))
     data = cur.fetchone()
 
     if data:
-
-        connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
-        channel = connection.channel()
-
-        channel.queue_declare(queue='hello')
-
-        channel.basic_publish(exchange='',
-                            routing_key='hello',
-                            body='Aggiunto libro con successo!!')
-        connection.close()
-        destinatario = 'indirizzo_email_destinatario@example.com'  # Sostituisci con l'effettivo indirizzo email
-        messaggio = 'Testo del messaggio da inviare'
-        send(destinatario, messaggio)
+        end_time = time.time()
+        log_execution_time(start_time, f'get_book for ID {id}')
         return jsonify(data), 200
     else:
+        end_time = time.time()
+        log_execution_time(start_time, f'get_book for ID {id}')
         return jsonify({"message": f"No book found with ID {id}"}), 404
+
 
 @app.route('/check_availability/<book_id>', methods=['GET'])
 def check_availability(book_id):
+    start_time = time.time()
     cur.execute('SELECT * FROM item WHERE book_id = %s AND isDisponibile = True;', (book_id,))
     data = cur.fetchone()
-    if data is not None:
+
+    if data:
+        log_execution_time(start_time, f'check_availability for book_id {book_id}')
         return jsonify(data)
     else:
-        return jsonify({"message": f"Nessun item disponibile per il libro con ID {book_id}"})
+        log_execution_time(start_time, f'check_availability for book_id {book_id}')
+        return jsonify({"message": f"No available items for book with ID {book_id}"})
 
-   
 
-@app.route('/items', methods =['GET'])
+@app.route('/items', methods=['GET'])
 def get_items():
+    start_time = time.time()
     cur.execute('SELECT * FROM item')
     data = cur.fetchall()
+    log_execution_time(start_time, 'get_items')
     return jsonify(data)
+
 
 @app.route('/create', methods=['POST'])
 def create_book():
-    # Ottieni i dati JSON dalla richiesta
+    start_time = time.time()
     data = request.get_json()
 
-    # Verifica se tutti i campi sono presenti e non vuoti
     required_fields = ['ISBN', 'Titolo', 'Autore', 'Genere', 'Anno']
     for field in required_fields:
         if field not in data or not data[field]:
             return jsonify({"Errore": f"Il campo '{field}' è obbligatorio e non può essere vuoto."}), 400
 
-    # Estrai i dati
-    isbn = data['ISBN']
-    Titolo = data['Titolo']
-    Autore = data['Autore']
-    Genere = data['Genere']
-    Anno = data['Anno']
+    isbn, titolo, autore, genere, anno = (data[field] for field in required_fields)
 
-    # Esegui l'inserimento nel database
-    cur.execute('INSERT INTO book(ISBN, Titolo, Autore, Genere, Anno) VALUES (%s, %s, %s, %s, %s);', (isbn, Titolo, Autore, Genere, Anno))
+    cur.execute(
+        'INSERT INTO book(ISBN, Titolo, Autore, Genere, Anno) VALUES (%s, %s, %s, %s, %s);',
+        (isbn, titolo, autore, genere, anno)
+    )
     conn.commit()
 
-    # Restituisci una risposta di successo
+    log_execution_time(start_time, 'create_book')
     return jsonify({"Messaggio": "Dati inseriti correttamente"}, 201)
 
 
 @app.route('/create_item', methods=['POST'])
 def create_item():
+    start_time = time.time()
     data = request.get_json()
     required_fields = ['book_id']
 
@@ -106,59 +118,86 @@ def create_item():
 
     cur.execute('INSERT INTO item(book_id) VALUES (%s);', (book_id,))
     conn.commit()
+
+    log_execution_time(start_time, 'create_item')
     return jsonify({"Messaggio": "Dati inseriti correttamente"}, 201)
 
 
 @app.route('/delete/<id>', methods=['DELETE'])
 def delete_book(id):
+    start_time = time.time()
     cur.execute('DELETE FROM book WHERE id = %s;', (id,))
     conn.commit()
+
+    log_execution_time(start_time, f'delete_book for ID {id}')
     if cur.rowcount > 0:
         return jsonify({'message': f'Book with the ID {id} deleted successfully'}, 200)
     else:
         return jsonify({'messagge': f'Book with ID {id} not found'}, 404)
-    
+
+
 @app.route('/delete-item/<id>', methods=['DELETE'])
 def delete_item(id):
+    start_time = time.time()
     cur.execute('DELETE FROM item WHERE id = %s;', (id,))
     conn.commit()
+
+    log_execution_time(start_time, f'delete_item for ID {id}')
     if cur.rowcount > 0:
         return jsonify({'message': f'Item with the ID {id} deleted successfully'}, 200)
     else:
         return jsonify({'messagge': f'Item with ID {id} not found'}, 404)
-    
+
+
 @app.route('/update/<id>', methods=['PUT'])
 def update_book(id):
+    start_time = time.time()
     up_data = request.get_json()
-    up_Isbn = up_data['ISBN']
-    up_Titolo = up_data['Titolo']
-    up_Autore = up_data['Autore']
-    up_Genere = up_data['Genere']
-    up_Anno = up_data['Anno']
+    up_Isbn, up_Titolo, up_Autore, up_Genere, up_Anno = (
+        up_data['ISBN'], up_data['Titolo'], up_data['Autore'], up_data['Genere'], up_data['Anno']
+    )
 
-    cur.execute(f'UPDATE book SET ISBN = %s, Titolo = %s, Autore = %s, Genere = %s, Anno = %s WHERE id ={id};',(up_Isbn,up_Titolo,up_Autore,up_Genere,up_Anno))
+    cur.execute(
+        f'UPDATE book SET ISBN = %s, Titolo = %s, Autore = %s, Genere = %s, Anno = %s WHERE id ={id};',
+        (up_Isbn, up_Titolo, up_Autore, up_Genere, up_Anno)
+    )
+    conn.commit()
+
+    log_execution_time(start_time, f'update_book for ID {id}')
     if cur.rowcount > 0:
         return jsonify({'messagge': f'Book with ID {id} updated successfully'})
     else:
-        return jsonify({'messagge':f'Book with ID {id} not found'})
-    
+        return jsonify({'messagge': f'Book with ID {id} not found'})
+
+
 @app.route('/set_availability/<item_id>', methods=['PUT'])
 def set_availability_true(item_id):
+    start_time = time.time()
     cur.execute('UPDATE item SET isDisponibile = NOT isDisponibile WHERE id = %s', item_id)
     conn.commit()
+
+    log_execution_time(start_time, f'set_availability for item_id {item_id}')
     return 'Disponibilità cambiata con successo', 200
+
 
 @app.route('/update-item/<id>', methods=['PUT'])
 def update_item(id):
+    start_time = time.time()
     up_data = request.get_json()
-    up_book_id = up_data['book_id']
-    up_status_libro = up_data['stato_libro']
+    up_book_id, up_status_libro = up_data['book_id'], up_data['stato_libro']
 
-    cur.execute(f'UPDATE item SET book_id=%s, stato_libro=%s WHERE id ={id};',(up_book_id,up_status_libro,))
+    cur.execute(
+        f'UPDATE item SET book_id=%s, stato_libro=%s WHERE id ={id};',
+        (up_book_id, up_status_libro)
+    )
+    conn.commit()
+
+    log_execution_time(start_time, f'update_item for ID {id}')
     if cur.rowcount > 0:
         return jsonify({'messagge': f'Item with ID {id} updated successfully'})
     else:
-        return jsonify({'messagge':f'Item with ID {id} not found'})
+        return jsonify({'messagge': f'Item with ID {id} not found'})
+
 
 if __name__ == '__main__':
     with conn.cursor() as cursor:
@@ -168,5 +207,4 @@ if __name__ == '__main__':
         cursor.execute(open('database/insert.sql', 'r').read())
         conn.commit()
 
-app.run(host = '0.0.0.0', port = 5000, debug = True)
-    
+    app.run(host='0.0.0.0', port=5000, debug=True)
