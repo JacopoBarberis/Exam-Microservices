@@ -32,13 +32,12 @@ def main():
     def callback(ch, method, properties, body):
         with open('notifications.txt', 'a') as f:
             f.write(f'{body}\n')
-        mail = flask_mail.Mail(mailtrap, mail_config)
+        #mail = flask_mail.Mail(mailtrap, mail_config)
 
     channel.basic_consume(queue='hello',
                         auto_ack=True,
                         on_message_callback=callback)
 
-    print(' [*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
 
 if __name__ == '__main__':

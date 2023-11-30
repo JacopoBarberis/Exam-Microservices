@@ -82,7 +82,7 @@ def create_user():
         routing_key='hello',
         body=f'Benvenuto {Nome}!!')
     connection.close()
-    log_execution_time(start_time, 'create_user')
+    #log_execution_time(start_time, 'create_user')
     return jsonify({"message": f"User {Nome} {Cognome} created successfully"}), 201
 
 @app.route('/delete/<username>', methods =['DELETE'])
