@@ -5,6 +5,7 @@ from datetime import datetime
 import logging
 import sys
 import time
+import pika
 
 log_file_path = 'app.log'
 
@@ -75,6 +76,15 @@ def create_loan():
     #cur.execute(f'UPDATE item SET isDisponibile = False WHERE id = {book_id} ')
     conn.commit()
     log_execution_time(start_time, 'create_loan')
+    connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+    channel = connection.channel()
+
+    channel.queue_declare(queue='hello')
+
+    channel.basic_publish(exchange='',
+        routing_key='hello',
+        body=f'Prestito creato correttamente!!')
+    connection.close()
     return jsonify({"Messagge":"Dati inseriti correttamente"}, 201)
 
 @app.route('/return/<loan_id>', methods=['PUT'])
@@ -90,6 +100,15 @@ def return_book(loan_id):
     requests.put(f'http://api-books:5000/set_availability/{book_id}')
     conn.commit()
     log_execution_time(start_time, 'update_loan')
+    connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+    channel = connection.channel()
+
+    channel.queue_declare(queue='hello')
+
+    channel.basic_publish(exchange='',
+        routing_key='hello',
+        body=f'Libro con ID {book_id} riconsegnato correttamente!!')
+    connection.close()
     return jsonify({"Message": "Riconsegna effettuata correttamente"})
 
 @app.route('/delete/<id>', methods=['DELETE'])
