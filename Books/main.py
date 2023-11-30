@@ -97,6 +97,15 @@ def create_book():
     conn.commit()
 
     log_execution_time(start_time, 'create_book')
+    connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+    channel = connection.channel()
+
+    channel.queue_declare(queue='hello')
+
+    channel.basic_publish(exchange='',
+                      routing_key='hello',
+                      body='This is a test message')
+    connection.close()
     return jsonify({"Messaggio": "Dati inseriti correttamente"}, 201)
 
 

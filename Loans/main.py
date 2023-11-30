@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
+
 conn = psycopg2.connect(
     database="library-loans",
     host="db-loans",
@@ -36,6 +37,15 @@ def index():
     with conn.cursor() as cur:
         cur.execute('SELECT * FROM loan')
         data = cur.fetchall()
+    connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+    channel = connection.channel()
+
+    channel.queue_declare(queue='hello')
+
+    channel.basic_publish(exchange='',
+        routing_key='hello',
+        body=f'a!!')
+    connection.close()
     return jsonify(data)
 
 from flask import abort
@@ -76,15 +86,7 @@ def create_loan():
     #cur.execute(f'UPDATE item SET isDisponibile = False WHERE id = {book_id} ')
     conn.commit()
     log_execution_time(start_time, 'create_loan')
-    connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
-    channel = connection.channel()
-
-    channel.queue_declare(queue='hello')
-
-    channel.basic_publish(exchange='',
-        routing_key='hello',
-        body=f'Prestito creato correttamente!!')
-    connection.close()
+    
     return jsonify({"Messagge":"Dati inseriti correttamente"}, 201)
 
 @app.route('/return/<loan_id>', methods=['PUT'])

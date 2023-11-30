@@ -5,10 +5,10 @@ drop table if exists book;
 create table book(
     id serial primary key,
     isbn varchar(255),
-    title varchar(255),
-    author varchar(255),
-    genre varchar(255),
-    publish_date int
+    titolo varchar(255),
+    autore varchar(255),
+    genere varchar(255),
+    anno int
 );
 
 create table item(
